@@ -1,100 +1,102 @@
+import {app, db} from "./config-firebase.js"
+import { getFirestore, collection, addDoc, getDocs,query, orderBy, doc, deleteDoc, where, documentId, updateDoc  } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, listAll, getDownloadURL} from "https://www.gstatic.com/firebasejs/10.3.1/firebase-storage.js";
+
+
 let imagem = document.querySelector("#arquivo")
 let btnEnviar = document.querySelector("#btnEnviar")
 let blocoImagens = document.querySelector("#blocoImagens")
 let btnCarregar = document.querySelector("#btnCarregar")
 
-let recebeImagem = ""
+let timestamp = new Date().getTime() // para poder ser utilizado como nome da imagem ao salvar no cloud storage.
 
-let listaImagens = []
-const dadosImagem = {
-    nomeImagem:"",
-    urlImagem:""    
-}
+// Create a root reference
+const storage = getStorage(app);
+const storageRef = ref(storage, `imagem/${timestamp}`);// função ref() recebe a instância de armazenamento storage e uma string que representa o caminho para o local desejado, seria o nome do arquivo lá no storage. Estou salvando dentro de uma pasta chamado 'imagem/' e em seguida
 
-function salvarImagem(){
-    const arquivo = new FileReader()// para poder tornar o arquivo que foi feito upload apto para ser lido ou executado, precisamos utilizar a classe 'FileReader' que irá "ler" o nosso arquivo
-    console.log(imagem.files[0])
-    let resultado = arquivo.readAsDataURL(imagem.files[0])// o método readAsDataURL serve para ler o arquivo
 
-    // é preciso adicionar um evento de 'load' para garantir que as informações do arquivo sejam carregadas de forma correta antes de exibir o conteúdo do arquivo que foi feito o upload
-    arquivo.addEventListener('load',(e)=>{
-        //console.log(e.target.result)
+/* SALVANDO NO FIRESTORE */
 
-        imgCard.src = e.target.result// imgCard é um id que não precisei criar variável, uma vez que o id é tido como variável global, posso chamar direto
+// REALIZANDO A INSERÇÃO NO BANCO
+function store(){
+    try {
+        
+        //console.log(imagem.files[0])
 
-        dadosImagem.urlImagem = e.target.result
-        dadosImagem.nomeImagem = imagem.files[0].name
-
-        recebeImagem = JSON.parse(localStorage.getItem("listaImagens"))
-        if(recebeImagem == null){
-            console.log("Sem nada por enquanto")
-
-            listaImagens.push(dadosImagem)
+        // Salvando imagem no Cloud Storage
+            uploadBytes(storageRef, imagem.files[0]).then((resultado) => {
+                console.log('Upload realizado', resultado);
+                alert("Upload realizado", resultado);
+            });
             
-            //localStorage.setItem("listaImagens",JSON.stringify(listaImagens))
-        }
-        else{
-
-            //listaImagens = recebeImagem
-
-            //listaImagens.push(dadosImagem)            
-            //localStorage.setItem("listaImagens",JSON.stringify(listaImagens))
-
-            //console.log(listaImagens)
-
-        }
-
-
-
+            
+  
        
-
-    })
+               
+    } catch (error) {
+        console.error("Erro ao criar o documento: ", error);
+    }
 }
 
+function exibirDados(){
+    const listRef = ref(storage, "imagem");// buscando pela pasta e acessando todas as imagens dentro
+    // Get metadata properties
+    listAll(listRef)
+    .then((res) => {
+      res.items.forEach((itemRef) => {
+        console.log(itemRef._location.path_)// pegando o caminho da imagem
+        downloadImagem(itemRef._location.path_)// passando o caminho da imagem, algo como 'imagem/1695246689148'
+      });
+    }).catch((error) => {
+      console.log("O seguinte erro ocorreu ao exibir tudo: ", error)
+    });
+}
 
+async function downloadImagem(imagem){
+    const starsRef = ref(storage, imagem);//é preciso passar o caminho da imagem para poder gerar a url correta
 
-function carregarImagem(){
+    try {
+        let resultado = await getDownloadURL(starsRef)
+        console.log(resultado)
+    } catch (error) {
+        // Uma lista completa de códigos de erro está disponível em
+        // https://firebase.google.com/docs/storage/web/handle-errors
+        console.log(error)
+        switch (error.code) {
+            case 'storage/object-not-found':
+            // File doesn't exist
+            break;
+            case 'storage/unauthorized':
+            // User doesn't have permission to access the object
+            break;
+            case 'storage/canceled':
+            // User canceled the upload
+            break;
     
-    let listaImagens = JSON.parse(localStorage.getItem("listaImagens"))
-
-    /*
-
-    //console.log(listaImagens)
-    */
-
+            // ...
     
-    for(itens of listaImagens){
-        console.log(itens)
-        let card = document.createElement("div")
-        card.classList.add("col")
-        card.innerHTML = `
-
-        <div class="card h-100">
-          <img src="${itens.urlImagem}" class="card-img-top" alt="..." id="imgCard">
-          <div class="card-body">
-            <h5 class="card-title">${itens.nomeImagem}</h5>
-            <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
-          </div>
-        </div>
-
-        `
-        blocoImagens.appendChild(card)
+            case 'storage/unknown':
+            // Unknown error occurred, inspect the server response
+            break;
+        }
     }
 
+   
 }
 
 btnEnviar.addEventListener("click", (evento)=>{
     evento.preventDefault()
 
-    salvarImagem()
-    
+    store()    
 
 })
 
 btnCarregar.addEventListener("click",(evento)=>{
     evento.preventDefault()
 
-    carregarImagem()
+    exibirDados()
+
+
 
 })
 
