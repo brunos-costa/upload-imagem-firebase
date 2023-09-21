@@ -1,6 +1,6 @@
 import {app, db} from "./config-firebase.js"
 import { getStorage, ref, uploadBytes, getDownloadURL} from "https://www.gstatic.com/firebasejs/10.3.1/firebase-storage.js"
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js"
+import { collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js"
 
 
 let imagem = document.querySelector("#arquivo")
@@ -40,10 +40,8 @@ function store(){
                 getDownloadURL(resultado.ref)
                 .then((url) => {
 
-                    console.log(url)
+                    //console.log(url)
                     dadosImagem.url = url
-
-                    localStorage.setItem("dados",JSON.stringify(dadosImagem))
 
                     cadastrarImagem(dadosImagem)
                 })
@@ -77,6 +75,7 @@ function store(){
     }
 }
 
+// CADASTRANDO A IMAGEM NO FIRESTORE
 async function cadastrarImagem(dados){
     try {
         const docRef = await addDoc(collection(db, "imagens"), dados);
@@ -93,6 +92,33 @@ async function cadastrarImagem(dados){
     //getDados() // chamando função para atualizar lista de dados ao criar novo contato
 }
 
+//RECUPERANDO DADOS DO FIREBASE - FIRESTORE
+async function getDados(){
+    blocoImagens.innerHTML = ""// limpando o elemento html antes de inserir novos dados, caso contrário, irá acumular vários valores
+
+    const busca = query(collection(db, "imagens"), orderBy("nome"));// ordenando a exibição dos dados em ordem alfabética
+
+    const consulta = await getDocs(busca);
+    consulta.forEach((itens) => {
+        console.log(itens.data())
+       //console.log(`${itens.id} => ${itens.data()}`);// Todos os dados
+       // console.log(`Nome: ${itens.data().nome}\nEmail: ${itens.data().email}`)// Dados específicos
+
+       blocoImagens.innerHTML += `
+       <div class="col">
+            <div class="card h-100">
+                <img src="${itens.data().url}" class="card-img-top tamanho mx-auto p-2" alt="...">
+                <div class="card-body">
+                    <h5 class="card-title">${itens.data().nome}</h5>
+                    <p class="card-text"><strong>Data de inserção no banco:</strong>${itens.data().timestamp}</p>
+                </div>
+            </div>  
+        </div>   
+        `
+
+    });
+}
+
 btnEnviar.addEventListener("click", (evento)=>{
     evento.preventDefault()
 
@@ -103,6 +129,8 @@ btnEnviar.addEventListener("click", (evento)=>{
 btnCarregar.addEventListener("click",(evento)=>{
     evento.preventDefault()
 
-    exibirDados()
+    getDados()
 })
+
+getDados()
 
