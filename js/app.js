@@ -34,7 +34,7 @@ function store(){
       
             // Fazendo o upload da imagem para o Storage
             uploadBytes(storageRef, imagem.files[0]).then((resultado) => {
-                console.log('Upload realizado', resultado);
+                //console.log('Upload realizado', resultado);
 
                 // Obtendo a URL de download da imagem
                 getDownloadURL(resultado.ref)
@@ -48,6 +48,7 @@ function store(){
                 .catch((error) => {
                     // Uma lista completa de códigos de erro está disponível em
                     // https://firebase.google.com/docs/storage/web/handle-errors
+                    console.log("Erro ao gerar a URL da imagem: "+error)
                     switch (error.code) {
                     case 'storage/object-not-found':
                         // File doesn't exist
@@ -71,7 +72,8 @@ function store(){
            
                
     } catch (error) {
-        console.error("Erro ao criar o documento: ", error);
+        console.error("Erro ao fazer upload da imagem: ", error);
+        alert("Não foi possível fazer o upload da imagem, insira uma imagem válida")
     }
 }
 
@@ -86,6 +88,7 @@ async function cadastrarImagem(dados){
 
 
     } catch (e) {
+        alert("Não foi possível cadastrar a imagem")
         console.error("Erro ao criar o documento: ", e);
     }
     
@@ -100,7 +103,7 @@ async function getDados(){
 
     const consulta = await getDocs(busca);
     consulta.forEach((itens) => {
-        console.log(itens.data())
+        //console.log(itens.data())
        //console.log(`${itens.id} => ${itens.data()}`);// Todos os dados
        // console.log(`Nome: ${itens.data().nome}\nEmail: ${itens.data().email}`)// Dados específicos
 
